@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Notes</title>
+    <link rel="stylesheet" href="/src/styles/base.css" />
+    <link rel="stylesheet" href="/src/styles/manager.css" />
+    <script type="module" src="/src/manager/main.ts" defer></script>
+  </head>
+  <body>
+    <nav>
+      <div role="tablist">
+        <button role="tab" id="tab-notes" aria-selected="true">Notes</button>
+        <button role="tab" id="tab-trash" aria-selected="false">Trash</button>
+      </div>
+      <button id="new">New note</button>
+    </nav>
+    <ul id="list"></ul>
+    <p id="empty" hidden></p>
+    <footer id="hint">Ctrl+Alt+N new · Ctrl+Alt+V paste · Ctrl+Alt+H/S hide/show all</footer>
+  </body>
+</html>

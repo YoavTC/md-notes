@@ -1,0 +1,55 @@
+/* Theme tokens. Light, flat, sharp corners. */
+:root {
+  --sans: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --mono: "Cascadia Mono", Consolas, "Courier New", monospace;
+  --font-size: 14px;
+
+  --fg: #1f2328;
+  --muted: #8a8f98;
+  --line: #d9dde3;
+  --link: #1f63b5;
+  --accent: #2f7ad8;
+  --selection: #cfe2fa;
+  --quote-fg: #4b5260;
+  --code-bg: rgba(31, 35, 40, 0.06);
+  --hover: rgba(31, 35, 40, 0.08);
+
+  --note-bg: #ffffff;
+  --note-bar: #f1f3f5;
+
+  color-scheme: light;
+}
+
+/* Per-note colors: restrained light tints, each with a slightly deeper bar. */
+[data-color="white"]  { --note-bg: #ffffff; --note-bar: #f1f3f5; }
+[data-color="gray"]   { --note-bg: #f4f5f7; --note-bar: #e6e8ec; }
+[data-color="blue"]   { --note-bg: #eef5fd; --note-bar: #dceafa; }
+[data-color="yellow"] { --note-bg: #fdf9e6; --note-bar: #f6eec7; }
+[data-color="green"]  { --note-bg: #eff7ef; --note-bar: #dcecdc; }
+[data-color="pink"]   { --note-bg: #fcf0f2; --note-bar: #f6dde2; }
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  font-family: var(--sans);
+  font-size: var(--font-size);
+  color: var(--fg);
+  background: var(--note-bg);
+  overflow: hidden;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: default;
+}
+
+button:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}

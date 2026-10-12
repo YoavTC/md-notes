@@ -1,5 +1,6 @@
 import { ensureSyntaxTree } from "@codemirror/language";
 import { EditorSelection, EditorState, Transaction } from "@codemirror/state";
+import { EditorView } from "@codemirror/view";
 import { describe, expect, it } from "vitest";
 import { indentListItem, insertLink, outdentListItem, toggleMarker, toggleTaskOnLine } from "./commands";
 import { createEditor, markdownExtensions } from "./index";
@@ -183,6 +184,20 @@ describe("paste", () => {
     Object.defineProperty(ev, "clipboardData", { value: data });
     view.contentDOM.dispatchEvent(ev);
     expect(doc).toBe("bold");
+    view.destroy();
+  });
+});
+
+describe("writing direction", () => {
+  it("lets every line pick its own direction", () => {
+    const parent = document.createElement("div");
+    document.body.append(parent);
+    const doc = ["שלום עולם", "- [ ] משימה", "English line"].join("\n");
+    const view = createEditor({ parent, doc, onChange: () => {}, onOpenLink: () => {} });
+    const lines = [...view.contentDOM.querySelectorAll(".cm-line")];
+    expect(lines).toHaveLength(3);
+    expect(lines.every((l) => l.getAttribute("dir") === "auto")).toBe(true);
+    expect(view.state.facet(EditorView.perLineTextDirection)).toBe(true);
     view.destroy();
   });
 });

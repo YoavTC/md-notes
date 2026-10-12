@@ -1,10 +1,13 @@
 // A single sticky-note window: title bar + editor + debounced saving.
 
 import { listen } from "@tauri-apps/api/event";
+import { EditorSelection } from "@codemirror/state";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { api, Color, COLORS, NoteMeta } from "../api";
 import { createEditor } from "../editor";
+import { formatDate, initSettings, Settings } from "../settings";
 
 const SAVE_DELAY_MS = 400;
 
@@ -87,6 +90,23 @@ async function trashNote() {
   await api.trashNote(id);
 }
 
+let copiedTimer: number | undefined;
+async function copyNote() {
+  const button = $("#copy");
+  try {
+    await writeText(editor.state.doc.toString());
+    button.classList.add("done");
+    button.title = "Copied";
+    clearTimeout(copiedTimer);
+    copiedTimer = window.setTimeout(() => {
+      button.classList.remove("done");
+      button.title = "Copy note (Markdown)";
+    }, 1200);
+  } catch (e) {
+    console.error("copy failed", e);
+  }
+}
+
 function openLink(href: string) {
   openUrl(href).catch((e) => console.error("open link failed", e));
 }
@@ -95,6 +115,13 @@ function openLink(href: string) {
 
 const { meta, content } = await api.loadNote(id);
 applyMeta(meta);
+
+function showCreated(s: Settings) {
+  const created = $("#created");
+  created.textContent = formatDate(meta.created, s.dateFormat);
+  created.title = `Created ${created.textContent}`;
+}
+showCreated(await initSettings(showCreated));
 
 const editor = createEditor({
   parent: $("#editor"),
@@ -124,6 +151,7 @@ $("#pin").addEventListener("click", async () => {
   const on = await api.toggleOnTop(id);
   applyMeta({ color: document.body.dataset.color as Color, alwaysOnTop: on });
 });
+$("#copy").addEventListener("click", copyNote);
 $("#trash").addEventListener("click", trashNote);
 $("#close").addEventListener("click", closeNote);
 
@@ -143,7 +171,17 @@ await win.listen<NoteMeta>("meta-changed", (e) => {
   if (e.payload.id === id) applyMeta(e.payload);
 });
 await listen("flush", () => flush());
-window.addEventListener("blur", () => flush());
+await win.listen("trash-self", () => trashNote());
+window.addEventListener("blur", () => {
+  flush();
+  // Drop any text selection when the note loses focus, keeping the caret.
+  const sel = editor.state.selection;
+  if (sel.ranges.some((r) => !r.empty)) {
+    editor.dispatch({ selection: EditorSelection.create(sel.ranges.map((r) => EditorSelection.cursor(r.head)), sel.mainIndex) });
+  }
+  window.getSelection()?.removeAllRanges();
+  togglePalette(false);
+});
 await win.onCloseRequested(async () => {
   // Alt+F4 and the like: save before the window goes away.
   await flush();

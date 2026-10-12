@@ -76,6 +76,15 @@ pub fn trash_note(app: &AppHandle, id: &str) -> Result<()> {
     Ok(())
 }
 
+/// Trash a note from outside its window (manager, hotkey). An open note is
+/// asked to trash itself so it can save pending edits first.
+pub fn request_trash(app: &AppHandle, id: &str) -> Result<()> {
+    match windows::note_window(app, id) {
+        Some(win) => win.emit_to(win.label(), "trash-self", ()).map_err(err),
+        None => trash_note(app, id),
+    }
+}
+
 pub fn restore_note(app: &AppHandle, id: &str) -> Result<()> {
     let meta = with_store(app, |s| s.restore(id)).map_err(err)?;
     windows::open_window(app, &meta, true).map_err(err)?;
@@ -120,12 +129,14 @@ pub fn hide_all(app: &AppHandle) {
     }
 }
 
-/// Show every open note (hidden or not), restoring saved geometry and
-/// always-on-top. Existing windows are reused, never duplicated.
+/// Show every note: hidden ones reappear and closed ones reopen, restoring
+/// saved geometry and always-on-top. Existing windows are reused, never
+/// duplicated.
 pub fn show_all(app: &AppHandle) {
-    let metas: Vec<NoteMeta> = with_store(app, |s| {
-        let ids: Vec<String> = s.notes().iter().filter(|n| n.open).map(|n| n.id.clone()).collect();
-        ids.iter().filter_map(|id| s.update(id, |m| m.hidden = false)).collect()
+    let metas = with_store(app, |s| {
+        let metas = s.reveal_all();
+        let _ = s.flush();
+        metas
     });
     let selected = app.state::<AppState>().selected.lock().unwrap().clone();
     for meta in &metas {
@@ -139,6 +150,7 @@ pub fn show_all(app: &AppHandle) {
     if let Some(win) = focus.and_then(|id| windows::note_window(app, &id)) {
         let _ = win.set_focus();
     }
+    notes_changed(app);
 }
 
 /// Open notes left open last session; create a first note on a fresh install.
@@ -161,6 +173,27 @@ pub fn startup(app: &AppHandle) {
             eprintln!("could not restore note {}: {e}", meta.id);
         }
     }
+}
+
+pub fn settings(app: &AppHandle) -> store::Settings {
+    with_store(app, |s| s.settings().clone())
+}
+
+/// Save new settings and apply them to every window.
+pub fn set_settings(app: &AppHandle, settings: store::Settings) -> store::Settings {
+    let saved = with_store(app, |s| {
+        let saved = s.set_settings(settings);
+        let _ = s.flush();
+        saved
+    });
+    // Scale applies to notes only, not the notes manager.
+    for (label, win) in app.webview_windows() {
+        if windows::id_of(&label).is_some() {
+            let _ = win.set_zoom(saved.scale);
+        }
+    }
+    let _ = app.emit("settings-changed", &saved);
+    saved
 }
 
 /// Quit for real: ask note windows to save pending edits, give them a moment,

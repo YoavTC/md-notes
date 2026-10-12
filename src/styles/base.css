@@ -38,6 +38,24 @@ html, body {
   color: var(--fg);
   background: var(--note-bg);
   overflow: hidden;
+  /* Chrome is not selectable; only note text and form fields are. */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.cm-content,
+input,
+textarea {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* "Fade/transition effects" off. */
+.no-anim *,
+.no-anim *::before,
+.no-anim *::after {
+  transition: none !important;
+  animation: none !important;
 }
 
 button {

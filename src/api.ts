@@ -35,6 +35,8 @@ export const api = {
   restoreNote: (id: string) => invoke<void>("restore_note", { id }),
   closeNote: (id: string) => invoke<void>("close_note", { id }),
   trashNote: (id: string) => invoke<void>("trash_note", { id }),
+  /** Trash from outside the note; an open note saves pending edits first. */
+  requestTrash: (id: string) => invoke<void>("request_trash", { id }),
   toggleOnTop: (id: string) => invoke<boolean>("toggle_on_top", { id }),
   setColor: (id: string, color: Color) => invoke<void>("set_color", { id, color }),
   listNotes: () => invoke<NoteSummary[]>("list_notes"),

@@ -69,15 +69,76 @@ fn default_h() -> f64 {
 pub struct Settings {
     #[serde(default = "yes")]
     pub autostart: bool,
+    /// UI scale multiplier applied as webview zoom, 0.5–2.
+    #[serde(default = "one")]
+    pub scale: f64,
+    /// Fade/transition effects.
+    #[serde(default = "yes")]
+    pub animations: bool,
+    /// Format of the creation date shown on notes (tokens: see src/settings.ts).
+    #[serde(default = "default_date_format")]
+    pub date_format: String,
+    #[serde(default = "default_font")]
+    pub font: String,
+    #[serde(default = "default_mono_font")]
+    pub mono_font: String,
 }
 
 fn yes() -> bool {
     true
 }
+fn one() -> f64 {
+    1.0
+}
+fn default_date_format() -> String {
+    "DD/MM/YYYY HH:mm:ss".into()
+}
+fn default_font() -> String {
+    "Segoe UI".into()
+}
+fn default_mono_font() -> String {
+    "Cascadia Mono".into()
+}
 
 impl Default for Settings {
     fn default() -> Self {
-        Settings { autostart: true }
+        Settings {
+            autostart: true,
+            scale: one(),
+            animations: true,
+            date_format: default_date_format(),
+            font: default_font(),
+            mono_font: default_mono_font(),
+        }
+    }
+}
+
+/// A font family name safe to put in CSS, or `None`.
+fn clean_font(name: &str) -> Option<String> {
+    let name = name.trim();
+    let ok = !name.is_empty()
+        && name.len() <= 64
+        && name.chars().all(|c| c.is_alphanumeric() || matches!(c, ' ' | '-' | '_' | '.'));
+    ok.then(|| name.to_string())
+}
+
+impl Settings {
+    /// Clamp and validate user-supplied settings; invalid values fall back to defaults.
+    pub fn sanitized(mut self) -> Settings {
+        self.scale = if self.scale.is_finite() {
+            (self.scale.clamp(0.5, 2.0) * 20.0).round() / 20.0
+        } else {
+            one()
+        };
+        let fmt = self.date_format.trim();
+        self.date_format = if fmt.is_empty() || fmt.chars().count() > 64 {
+            default_date_format()
+        } else {
+            fmt.to_string()
+        };
+        self.font = clean_font(&self.font).unwrap_or_else(default_font);
+        self.mono_font = clean_font(&self.mono_font).unwrap_or_else(default_mono_font);
+        self
     }
 }
 
@@ -248,6 +309,24 @@ impl Store {
     pub fn set_autostart(&mut self, on: bool) {
         self.index.settings.autostart = on;
         self.dirty = true;
+    }
+
+    /// Replace the user-facing settings (autostart is managed separately).
+    pub fn set_settings(&mut self, settings: Settings) -> Settings {
+        let autostart = self.index.settings.autostart;
+        self.index.settings = Settings { autostart, ..settings.sanitized() };
+        self.dirty = true;
+        self.index.settings.clone()
+    }
+
+    /// Mark every live note open and visible ("Show all"). Returns their metadata.
+    pub fn reveal_all(&mut self) -> Vec<NoteMeta> {
+        for n in &mut self.index.notes {
+            n.open = true;
+            n.hidden = false;
+        }
+        self.dirty = true;
+        self.index.notes.clone()
     }
 
     pub fn get(&self, id: &str) -> Option<&NoteMeta> {
@@ -520,6 +599,48 @@ mod tests {
         assert_eq!(s.purge_trash(deleted + TRASH_MAX_AGE_MS + 1, TRASH_MAX_AGE_MS).unwrap(), 1);
         assert!(s.trash().is_empty());
         assert!(!dir.path().join("trash").join(format!("{}.md", n.id)).exists());
+    }
+
+    #[test]
+    fn reveal_all_opens_closed_and_hidden_notes() {
+        let (_dir, mut s) = store();
+        let a = s.create("a").unwrap();
+        let b = s.create("b").unwrap();
+        let c = s.create("c").unwrap();
+        s.update(&a.id, |m| m.open = false);
+        s.update(&b.id, |m| m.hidden = true);
+        s.trash_note(&c.id).unwrap();
+        let revealed = s.reveal_all();
+        assert_eq!(revealed.len(), 2);
+        assert!(revealed.iter().all(|m| m.open && !m.hidden));
+        assert_eq!(s.trash().len(), 1);
+    }
+
+    #[test]
+    fn settings_are_sanitized_and_persist() {
+        let (dir, mut s) = store();
+        s.set_autostart(false);
+        let saved = s.set_settings(Settings {
+            autostart: true,
+            scale: 7.0,
+            animations: false,
+            date_format: "  ".into(),
+            font: "Comic Sans MS".into(),
+            mono_font: "x\"; } body { color: red".into(),
+        });
+        assert_eq!(saved.scale, 2.0);
+        assert!(!saved.autostart, "autostart is not changed by set_settings");
+        assert_eq!(saved.date_format, "DD/MM/YYYY HH:mm:ss");
+        assert_eq!(saved.font, "Comic Sans MS");
+        assert_eq!(saved.mono_font, "Cascadia Mono");
+        s.flush().unwrap();
+        let s = Store::open(dir.path()).unwrap();
+        assert!(!s.settings().animations);
+        assert_eq!(
+            Settings { scale: 0.73, ..Settings::default() }.sanitized().scale,
+            0.75
+        );
+        assert_eq!(Settings { scale: f64::NAN, ..Settings::default() }.sanitized().scale, 1.0);
     }
 
     #[test]

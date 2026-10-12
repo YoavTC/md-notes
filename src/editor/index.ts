@@ -5,7 +5,16 @@ import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { HighlightStyle, indentUnit, syntaxHighlighting } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";
 import { EditorState, Extension } from "@codemirror/state";
-import { drawSelection, EditorView, keymap, placeholder } from "@codemirror/view";
+import {
+  Decoration,
+  DecorationSet,
+  drawSelection,
+  EditorView,
+  keymap,
+  placeholder,
+  ViewPlugin,
+  ViewUpdate,
+} from "@codemirror/view";
 import { tags as t } from "@lezer/highlight";
 import {
   indentListItem,
@@ -47,6 +56,39 @@ const theme = EditorView.theme({
     backgroundColor: "var(--selection) !important",
   },
 });
+
+// Per-line writing direction: each line takes the direction of its first
+// strong character, so Hebrew/Arabic lines run right-to-left and can be mixed
+// with left-to-right lines in the same note.
+const autoDir = Decoration.line({ attributes: { dir: "auto" } });
+
+function dirDecorations(view: EditorView): DecorationSet {
+  const ranges = [];
+  for (const { from, to } of view.visibleRanges) {
+    for (let pos = from; pos <= to; ) {
+      const line = view.state.doc.lineAt(pos);
+      ranges.push(autoDir.range(line.from));
+      pos = line.to + 1;
+    }
+  }
+  return Decoration.set(ranges, true);
+}
+
+export const bidi: Extension = [
+  EditorView.perLineTextDirection.of(true),
+  ViewPlugin.fromClass(
+    class {
+      decorations: DecorationSet;
+      constructor(view: EditorView) {
+        this.decorations = dirDecorations(view);
+      }
+      update(u: ViewUpdate) {
+        if (u.docChanged || u.viewportChanged) this.decorations = dirDecorations(u.view);
+      }
+    },
+    { decorations: (v) => v.decorations },
+  ),
+];
 
 export interface EditorOptions {
   parent: HTMLElement;
@@ -99,6 +141,7 @@ export function createEditor(opts: EditorOptions): EditorView {
           { key: "Shift-Tab", run: (v) => outdentListItem(v) || indentLess(v) },
         ]),
         markdownExtensions(),
+        bidi,
         keymap.of([...historyKeymap, ...defaultKeymap]),
         linkClicks,
         theme,

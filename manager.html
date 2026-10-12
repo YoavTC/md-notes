@@ -11,13 +11,85 @@
   <body>
     <nav>
       <div role="tablist">
-        <button role="tab" id="tab-notes" aria-selected="true">Notes</button>
-        <button role="tab" id="tab-trash" aria-selected="false">Trash</button>
+        <button role="tab" id="tab-notes" aria-controls="list" aria-selected="true">Notes</button>
+        <button role="tab" id="tab-trash" aria-controls="list" aria-selected="false">Trash</button>
+        <button role="tab" id="tab-settings" aria-controls="settings" aria-selected="false">Settings</button>
       </div>
       <button id="new">New note</button>
     </nav>
+
     <ul id="list"></ul>
     <p id="empty" hidden></p>
-    <footer id="hint">Ctrl+Alt+N new · Ctrl+Alt+V paste · Ctrl+Alt+H/S hide/show all</footer>
+
+    <form id="settings" hidden autocomplete="off">
+      <p class="scope">Scale and fonts apply to notes only, not to this window.</p>
+      <fieldset>
+        <legend>Appearance</legend>
+        <label class="field">
+          <span>Scale</span>
+          <span class="control">
+            <input type="range" name="scale" min="0.5" max="2" step="0.05" />
+            <output name="scaleOut"></output>
+          </span>
+        </label>
+        <div class="field">
+          <span>Effects</span>
+          <label class="check">
+            <input type="checkbox" name="animations" />
+            <span>Fade and transitions</span>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Fonts</legend>
+        <label class="field">
+          <span>Text</span>
+          <input type="text" name="font" list="fonts" spellcheck="false" />
+        </label>
+        <label class="field">
+          <span>Code</span>
+          <input type="text" name="monoFont" list="mono-fonts" spellcheck="false" />
+        </label>
+        <p class="sample indent" id="font-sample">Sample text <code>let code = 1;</code></p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Creation date</legend>
+        <label class="field">
+          <span>Format</span>
+          <input type="text" name="dateFormat" spellcheck="false" />
+        </label>
+        <p class="help indent">
+          <output name="datePreview"></output>
+          YYYY YY · MMMM MMM MM M · DD D · HH H hh h · mm · ss · A a · [literal text]
+        </p>
+      </fieldset>
+
+      <button type="button" id="reset">Reset to defaults</button>
+    </form>
+
+    <datalist id="fonts">
+      <option value="Segoe UI"></option>
+      <option value="Segoe UI Variable Text"></option>
+      <option value="Arial"></option>
+      <option value="Calibri"></option>
+      <option value="Cambria"></option>
+      <option value="Georgia"></option>
+      <option value="Tahoma"></option>
+      <option value="Verdana"></option>
+      <option value="Bahnschrift"></option>
+      <option value="David"></option>
+      <option value="Arial Hebrew"></option>
+    </datalist>
+    <datalist id="mono-fonts">
+      <option value="Cascadia Mono"></option>
+      <option value="Cascadia Code"></option>
+      <option value="Consolas"></option>
+      <option value="Courier New"></option>
+      <option value="Lucida Console"></option>
+    </datalist>
+
+    <footer id="hint"></footer>
   </body>
 </html>

@@ -13,13 +13,16 @@
       <button id="new" title="New note (Ctrl+N)" aria-label="New note">
         <svg viewBox="0 0 16 16"><path d="M8 3v10M3 8h10" /></svg>
       </button>
-      <span class="spacer" data-tauri-drag-region></span>
+      <span id="created" data-tauri-drag-region dir="ltr"></span>
       <span id="dirty" title="Saving…" hidden></span>
       <button id="color" title="Color" aria-label="Color" aria-expanded="false">
         <svg viewBox="0 0 16 16"><rect x="3.5" y="3.5" width="9" height="9" /></svg>
       </button>
       <button id="pin" title="Keep on top (Ctrl+Alt+T)" aria-label="Keep on top" aria-pressed="false">
         <svg viewBox="0 0 16 16"><path d="M6 2.5h4M7 2.5v4L4.5 9h7L9 6.5v-4M8 9v4.5" /></svg>
+      </button>
+      <button id="copy" title="Copy note (Markdown)" aria-label="Copy note">
+        <svg viewBox="0 0 16 16"><path d="M5.5 5.5h7v8h-7zM3.5 10.5v-8h7" /></svg>
       </button>
       <button id="trash" title="Delete note (Ctrl+Alt+D)" aria-label="Delete note">
         <svg viewBox="0 0 16 16"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5" /></svg>

@@ -33,7 +33,7 @@ pub fn run(app: &AppHandle, action: Action) {
         },
         Action::New => notes::new_note(app, "").map(|_| ()),
         Action::Delete => match windows::selected_visible(app) {
-            Some(id) => notes::trash_note(app, &id),
+            Some(id) => notes::request_trash(app, &id),
             None => Ok(()),
         },
         Action::HideAll => {

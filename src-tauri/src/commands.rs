@@ -78,6 +78,21 @@ pub fn trash_note(app: AppHandle, id: String) -> Result<()> {
 }
 
 #[tauri::command]
+pub fn request_trash(app: AppHandle, id: String) -> Result<()> {
+    notes::request_trash(&app, &id)
+}
+
+#[tauri::command]
+pub fn get_settings(app: AppHandle) -> store::Settings {
+    notes::settings(&app)
+}
+
+#[tauri::command]
+pub fn set_settings(app: AppHandle, settings: store::Settings) -> store::Settings {
+    notes::set_settings(&app, settings)
+}
+
+#[tauri::command]
 pub fn toggle_on_top(app: AppHandle, id: String) -> Result<bool> {
     notes::toggle_on_top(&app, &id)
 }

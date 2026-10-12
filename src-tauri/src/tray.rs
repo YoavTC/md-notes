@@ -63,15 +63,14 @@ pub fn build(app: &AppHandle, failed_hotkeys: &[&str]) -> tauri::Result<()> {
             } = event
             {
                 let app = tray.app_handle();
-                let any_open = app
+                let any_notes = !app
                     .state::<AppState>()
                     .store
                     .lock()
                     .unwrap()
                     .notes()
-                    .iter()
-                    .any(|n| n.open);
-                if any_open {
+                    .is_empty();
+                if any_notes {
                     notes::show_all(app);
                 } else {
                     let _ = windows::show_manager(app);

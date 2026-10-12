@@ -122,6 +122,7 @@ pub fn open_window(app: &AppHandle, meta: &NoteMeta, focus: bool) -> tauri::Resu
         .visible(false)
         .focused(focus)
         .build()?;
+    apply_zoom(app, &win);
     place(&win, meta, cascade)?;
     // Remember where it actually landed (Moved is ignored while invisible).
     if let Ok(p) = win.outer_position() {
@@ -138,6 +139,14 @@ pub fn open_window(app: &AppHandle, meta: &NoteMeta, focus: bool) -> tauri::Resu
         }
     }
     Ok(win)
+}
+
+/// Apply the "scale" setting as webview zoom (note windows only).
+fn apply_zoom(app: &AppHandle, win: &WebviewWindow) {
+    let scale = app.state::<AppState>().store.lock().unwrap().settings().scale;
+    if (scale - 1.0).abs() > f64::EPSILON {
+        let _ = win.set_zoom(scale);
+    }
 }
 
 pub fn note_window(app: &AppHandle, id: &str) -> Option<WebviewWindow> {
@@ -162,8 +171,8 @@ pub fn show_manager(app: &AppHandle) -> tauri::Result<()> {
     }
     WebviewWindowBuilder::new(app, MANAGER_LABEL, WebviewUrl::App("manager.html".into()))
         .title("Notes")
-        .inner_size(340.0, 460.0)
-        .min_inner_size(260.0, 240.0)
+        .inner_size(360.0, 480.0)
+        .min_inner_size(280.0, 260.0)
         .center()
         .build()?;
     Ok(())

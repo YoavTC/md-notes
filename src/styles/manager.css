@@ -146,9 +146,28 @@ legend {
   color: var(--quote-fg);
 }
 
+.control input[type="number"] { width: 80px; flex: none; }
+.unit { color: var(--muted); }
+
+/* Default-color picker: one swatch per note color, the checked one outlined. */
+.colors { display: flex; gap: 6px; }
+.color-choice {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  background: var(--note-bar);
+  border: 1px solid var(--line);
+  cursor: pointer;
+}
+.color-choice:hover { border-color: var(--muted); }
+.color-choice:has(:checked) { outline: 2px solid var(--accent); outline-offset: 1px; }
+.color-choice:has(:focus-visible) { outline: 2px solid var(--accent); outline-offset: 1px; }
+.color-choice input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+
 .check { display: inline-flex; align-items: center; gap: 8px; }
 
-input[type="text"] {
+input[type="text"],
+input[type="number"] {
   width: 100%;
   min-width: 0;
   height: 28px;
@@ -159,7 +178,8 @@ input[type="text"] {
   border: 1px solid var(--line);
   border-radius: 0;
 }
-input[type="text"]:focus { outline: 1px solid var(--accent); outline-offset: -1px; border-color: var(--accent); }
+input[type="text"]:focus,
+input[type="number"]:focus { outline: 1px solid var(--accent); outline-offset: -1px; border-color: var(--accent); }
 input[type="range"] { flex: 1; min-width: 0; margin: 0; accent-color: var(--accent); }
 input[type="checkbox"] { flex: none; width: 14px; height: 14px; margin: 0; accent-color: var(--accent); }
 

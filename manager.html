@@ -42,6 +42,28 @@
       </fieldset>
 
       <fieldset>
+        <legend>New notes</legend>
+        <label class="field">
+          <span>Width</span>
+          <span class="control">
+            <input type="number" name="noteWidth" min="160" max="2000" step="10" />
+            <span class="unit">px</span>
+          </span>
+        </label>
+        <label class="field">
+          <span>Height</span>
+          <span class="control">
+            <input type="number" name="noteHeight" min="90" max="2000" step="10" />
+            <span class="unit">px</span>
+          </span>
+        </label>
+        <div class="field">
+          <span>Color</span>
+          <span class="colors" id="note-colors" role="radiogroup" aria-label="Color"></span>
+        </div>
+      </fieldset>
+
+      <fieldset>
         <legend>Fonts</legend>
         <label class="field">
           <span>Text</span>

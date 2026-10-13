@@ -182,6 +182,10 @@ window.addEventListener("blur", () => {
   window.getSelection()?.removeAllRanges();
   togglePalette(false);
 });
+// Show the title-bar controls only while this window is the focused one.
+// Starts hidden; the editor having DOM focus doesn't mean the window does.
+document.body.classList.toggle("active", await win.isFocused());
+await win.onFocusChanged(({ payload: focused }) => document.body.classList.toggle("active", focused));
 await win.onCloseRequested(async () => {
   // Alt+F4 and the like: save before the window goes away.
   await flush();

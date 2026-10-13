@@ -1,7 +1,7 @@
 //! Note window lifecycle: creation, placement, geometry tracking and
 //! selected-note tracking. Knows nothing about tray or hotkeys.
 
-use crate::store::NoteMeta;
+use crate::store::{NoteMeta, MIN_H, MIN_W};
 use crate::AppState;
 use std::sync::atomic::Ordering;
 use tauri::{
@@ -116,7 +116,7 @@ pub fn open_window(app: &AppHandle, meta: &NoteMeta, focus: bool) -> tauri::Resu
         .title("Note")
         .decorations(false)
         .inner_size(meta.w, meta.h)
-        .min_inner_size(160.0, 90.0)
+        .min_inner_size(MIN_W, MIN_H)
         .skip_taskbar(true)
         .always_on_top(meta.always_on_top)
         .visible(false)

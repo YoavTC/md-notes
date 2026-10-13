@@ -20,8 +20,8 @@ body {
   flex: 1;
   min-width: 0;
   align-self: stretch;
-  display: flex;
-  align-items: center;
+  line-height: 26px;
+  text-align: center;
   padding: 0 6px;
   overflow: hidden;
   white-space: nowrap;
@@ -32,20 +32,22 @@ body {
 }
 
 #bar button {
+  flex: none;
   width: 26px;
   height: 22px;
-  display: grid;
+  display: none;
   place-items: center;
   color: var(--muted);
-  opacity: 0;
-  transition: opacity 80ms linear;
 }
 
-/* Controls stay quiet until the note is hovered or focused; that includes
-   an active pin, which keeps its color but fades like the rest. */
+/* Controls are removed (display: none) until the note is hovered or its window is focused
+   (body.active, set from window focus events), so the creation date gets the
+   whole bar; that includes an active pin, which keeps its color but is
+   removed like the rest. :focus-within isn't used because the editor keeps DOM focus
+   in background windows. */
 body:hover #bar button,
-body:focus-within #bar button,
-#bar button[aria-expanded="true"] { opacity: 1; }
+body.active #bar button,
+#bar button[aria-expanded="true"] { display: grid; }
 
 #bar button:hover { background: var(--hover); color: var(--fg); }
 #bar button.on,

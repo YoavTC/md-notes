@@ -2,6 +2,7 @@
 
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
+import type { Color } from "./api";
 
 export interface Settings {
   autostart: boolean;
@@ -10,6 +11,10 @@ export interface Settings {
   dateFormat: string;
   font: string;
   monoFont: string;
+  /** Size of newly created notes, in logical pixels. */
+  noteWidth: number;
+  noteHeight: number;
+  noteColor: Color;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -19,6 +24,9 @@ export const DEFAULT_SETTINGS: Settings = {
   dateFormat: "DD/MM/YYYY HH:mm:ss",
   font: "Segoe UI",
   monoFont: "Cascadia Mono",
+  noteWidth: 300,
+  noteHeight: 280,
+  noteColor: "white",
 };
 
 const pad = (n: number, len = 2) => String(n).padStart(len, "0");

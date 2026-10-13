@@ -15,9 +15,15 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub const INDEX_VERSION: u32 = 1;
+pub const COLORS: &[&str] = &["white", "gray", "blue", "yellow", "green", "pink"];
 pub const DEFAULT_COLOR: &str = "white";
 pub const DEFAULT_W: f64 = 300.0;
 pub const DEFAULT_H: f64 = 280.0;
+/// Bounds for the default size of new notes (logical pixels). The minimum
+/// matches the note window's minimum inner size.
+pub const MIN_W: f64 = 160.0;
+pub const MIN_H: f64 = 90.0;
+pub const MAX_NOTE_SIZE: f64 = 2000.0;
 pub const TRASH_MAX_AGE_MS: u64 = 30 * 24 * 60 * 60 * 1000;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -82,6 +88,14 @@ pub struct Settings {
     pub font: String,
     #[serde(default = "default_mono_font")]
     pub mono_font: String,
+    /// Size of newly created notes, in logical pixels.
+    #[serde(default = "default_w")]
+    pub note_width: f64,
+    #[serde(default = "default_h")]
+    pub note_height: f64,
+    /// Color of newly created notes, one of `COLORS`.
+    #[serde(default = "default_color")]
+    pub note_color: String,
 }
 
 fn yes() -> bool {
@@ -109,7 +123,19 @@ impl Default for Settings {
             date_format: default_date_format(),
             font: default_font(),
             mono_font: default_mono_font(),
+            note_width: DEFAULT_W,
+            note_height: DEFAULT_H,
+            note_color: default_color(),
         }
+    }
+}
+
+/// `v` rounded and clamped to `min..=MAX_NOTE_SIZE`, or `fallback` if not a number.
+fn clean_size(v: f64, min: f64, fallback: f64) -> f64 {
+    if v.is_finite() {
+        v.round().clamp(min, MAX_NOTE_SIZE)
+    } else {
+        fallback
     }
 }
 
@@ -138,6 +164,11 @@ impl Settings {
         };
         self.font = clean_font(&self.font).unwrap_or_else(default_font);
         self.mono_font = clean_font(&self.mono_font).unwrap_or_else(default_mono_font);
+        self.note_width = clean_size(self.note_width, MIN_W, DEFAULT_W);
+        self.note_height = clean_size(self.note_height, MIN_H, DEFAULT_H);
+        if !COLORS.contains(&self.note_color.as_str()) {
+            self.note_color = default_color();
+        }
         self
     }
 }
@@ -342,14 +373,18 @@ impl Store {
         Some(note.clone())
     }
 
-    /// Create a new open note with `content`. Content and index are written
-    /// immediately so a brand-new note survives a crash.
+    /// Create a new open note with `content`, sized per the settings. Content
+    /// and index are written immediately so a brand-new note survives a crash.
     pub fn create(&mut self, content: &str) -> io::Result<NoteMeta> {
         let id = uuid::Uuid::new_v4().to_string();
         let now = now_ms();
+        let settings = &self.index.settings;
         let meta = NoteMeta {
             created: now,
             modified: now,
+            w: settings.note_width,
+            h: settings.note_height,
+            color: settings.note_color.clone(),
             ..Self::blank_meta(id.clone())
         };
         atomic_write(&self.note_path(&id), content.as_bytes())?;
@@ -627,12 +662,17 @@ mod tests {
             date_format: "  ".into(),
             font: "Comic Sans MS".into(),
             mono_font: "x\"; } body { color: red".into(),
+            note_width: 50.0,
+            note_height: f64::INFINITY,
+            note_color: "red".into(),
         });
         assert_eq!(saved.scale, 2.0);
         assert!(!saved.autostart, "autostart is not changed by set_settings");
         assert_eq!(saved.date_format, "DD/MM/YYYY HH:mm:ss");
         assert_eq!(saved.font, "Comic Sans MS");
         assert_eq!(saved.mono_font, "Cascadia Mono");
+        assert_eq!((saved.note_width, saved.note_height), (MIN_W, DEFAULT_H));
+        assert_eq!(saved.note_color, DEFAULT_COLOR);
         s.flush().unwrap();
         let s = Store::open(dir.path()).unwrap();
         assert!(!s.settings().animations);
@@ -641,6 +681,19 @@ mod tests {
             0.75
         );
         assert_eq!(Settings { scale: f64::NAN, ..Settings::default() }.sanitized().scale, 1.0);
+    }
+
+    #[test]
+    fn new_notes_use_default_size_and_color_settings() {
+        let (_dir, mut s) = store();
+        s.set_settings(Settings {
+            note_width: 420.0,
+            note_height: 333.4,
+            note_color: "green".into(),
+            ..Settings::default()
+        });
+        let n = s.create("").unwrap();
+        assert_eq!((n.w, n.h, n.color.as_str()), (420.0, 333.0, "green"));
     }
 
     #[test]

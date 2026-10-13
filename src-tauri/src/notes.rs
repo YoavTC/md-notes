@@ -2,7 +2,7 @@
 //! Each action updates the store first, releases the lock, then touches
 //! windows (window events re-enter the store lock).
 
-use crate::store::{self, NoteMeta};
+use crate::store::{self, NoteMeta, COLORS};
 use crate::windows;
 use crate::AppState;
 use std::sync::atomic::Ordering;
@@ -10,8 +10,6 @@ use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
 
 pub type Result<T> = std::result::Result<T, String>;
-
-pub const COLORS: &[&str] = &["white", "gray", "blue", "yellow", "green", "pink"];
 
 fn err(e: impl std::fmt::Display) -> String {
     e.to_string()

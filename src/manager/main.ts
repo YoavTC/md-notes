@@ -1,7 +1,7 @@
 // Notes list, trash and global settings.
 
 import { listen } from "@tauri-apps/api/event";
-import { api, NoteSummary } from "../api";
+import { api, Color, COLORS, NoteSummary } from "../api";
 import { DEFAULT_SETTINGS, formatDate, initSettings, saveSettings, Settings } from "../settings";
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
@@ -143,8 +143,22 @@ function select(next: Tab) {
 // --- settings ---------------------------------------------------------------
 
 const form = $<HTMLFormElement>("#settings");
-const field = <T extends HTMLElement>(name: string) => form.elements.namedItem(name) as unknown as T;
+const field = <T extends HTMLElement | RadioNodeList>(name: string) => form.elements.namedItem(name) as unknown as T;
 let current: Settings = DEFAULT_SETTINGS;
+
+for (const color of COLORS) {
+  const label = document.createElement("label");
+  label.className = "color-choice";
+  label.dataset.color = color;
+  label.title = color[0].toUpperCase() + color.slice(1);
+  const radio = document.createElement("input");
+  radio.type = "radio";
+  radio.name = "noteColor";
+  radio.value = color;
+  radio.setAttribute("aria-label", label.title);
+  label.append(radio);
+  $("#note-colors").append(label);
+}
 
 function fillForm(s: Settings) {
   current = s;
@@ -159,6 +173,9 @@ function fillForm(s: Settings) {
   set("font", s.font);
   set("monoFont", s.monoFont);
   set("dateFormat", s.dateFormat);
+  set("noteWidth", String(s.noteWidth));
+  set("noteHeight", String(s.noteHeight));
+  field<RadioNodeList>("noteColor").value = s.noteColor;
   updatePreview();
   updateFontSample();
 }
@@ -185,6 +202,10 @@ function readForm(): Settings {
     font: field<HTMLInputElement>("font").value,
     monoFont: field<HTMLInputElement>("monoFont").value,
     dateFormat: field<HTMLInputElement>("dateFormat").value,
+    // An empty or partial number keeps the current size; Rust clamps the rest.
+    noteWidth: field<HTMLInputElement>("noteWidth").valueAsNumber || current.noteWidth,
+    noteHeight: field<HTMLInputElement>("noteHeight").valueAsNumber || current.noteHeight,
+    noteColor: (field<RadioNodeList>("noteColor").value as Color) || current.noteColor,
   };
 }
 
@@ -201,11 +222,13 @@ form.addEventListener("input", (e) => {
   }
   if (name === "dateFormat") updatePreview();
   if (name === "font" || name === "monoFont") updateFontSample();
-  // Text fields wait for a pause in typing; the slider applies on release (change).
-  if (name !== "scale") save(name === "animations" ? 0 : 350);
+  // Text fields wait for a pause in typing; the slider and size fields apply on
+  // change, so a half-typed size isn't clamped and saved.
+  if (!onChangeOnly.has(name)) save(name === "animations" || name === "noteColor" ? 0 : 350);
 });
+const onChangeOnly = new Set(["scale", "noteWidth", "noteHeight"]);
 form.addEventListener("change", (e) => {
-  if ((e.target as HTMLInputElement).name === "scale") save(0);
+  if (onChangeOnly.has((e.target as HTMLInputElement).name)) save(0);
 });
 form.addEventListener("submit", (e) => e.preventDefault());
 // Invalid fonts fall back to defaults on save; show that once the field is left.
